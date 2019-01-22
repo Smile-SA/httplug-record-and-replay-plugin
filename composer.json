@@ -1,5 +1,5 @@
 {
-    "name": "smile/httplug-record-n-replay-plugin",
+    "name": "smile/httplug-record-and-replay-plugin",
     "description": "Taping plugin for HTTPlug",
     "license": "MIT",
     "keywords": ["record", "replay", "http", "httplug", "plugin"],
