@@ -16,14 +16,17 @@ use Psr\SimpleCache\CacheInterface;
 
 class RecordAndReplayPlugin implements Plugin
 {
-    /** @var bool */
-    private $isRecording;
     /** @var CacheInterface */
     private $cachePool;
+
     /** @var CacheKeyGenerator */
     private $cacheKeyGenerator;
+
     /** @var StreamFactory */
     private $streamFactory;
+
+    /** @var bool */
+    private $isRecording;
 
     public function __construct(
         CacheInterface $cachePool,
