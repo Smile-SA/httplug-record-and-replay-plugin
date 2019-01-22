@@ -7,7 +7,6 @@ cache:
         - $HOME/.composer/cache/files
 
 php:
-    - 7.0
     - 7.1
     - 7.2
     - 7.3
@@ -19,10 +18,12 @@ env:
 matrix:
     fast_finish: true
     include:
-        - php: 7.0
+        - php: 7.1
           env: COMPOSER_FLAGS="--prefer-stable --prefer-lowest" COVERAGE=true TEST_COMMAND="./vendor/bin/phpunit --coverage-clover phpunit-coverage.xml"
+        - php: 7.1
+          env: COVERAGE=true TEST_COMMAND="./vendor/bin/phpunit --coverage-clover phpunit-coverage.xml"
         - php: 7.2
-          env: COMPOSER_FLAGS="--prefer-stable"
+          env: COMPOSER_FLAGS="--prefer-stable --prefer-lowest"
     allow_failures:
         - php: 7.3
 
