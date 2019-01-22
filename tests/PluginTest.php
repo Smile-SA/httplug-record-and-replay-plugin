@@ -14,6 +14,10 @@ use Psr\Http\Message\StreamInterface;
 use Smile\HTTPlugRecordAndReplayPlugin\NoRecordException;
 use Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin;
 
+/**
+ * @covers Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin
+ * @covers Smile\HTTPlugRecordAndReplayPlugin\NoRecordException
+ */
 class PluginTest extends TestCase
 {
     public function testItPlugsIn()
