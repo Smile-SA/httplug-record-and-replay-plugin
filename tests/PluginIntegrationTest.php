@@ -47,7 +47,8 @@ class PluginIntegrationTest extends TestCase
         );
 
         self::assertSame(
-            $responseToBeRecorded, $actualResponse,
+            $responseToBeRecorded,
+            $actualResponse,
             'The client responded an unexpected response.'
         );
 
@@ -62,12 +63,14 @@ class PluginIntegrationTest extends TestCase
         );
 
         self::assertSame(
-            $responseToBeRecorded, $actualResponse,
+            $responseToBeRecorded,
+            $actualResponse,
             'The client did not responded the recorded response.'
         );
 
         self::assertCount(
-            0, $secondActualClient->getRequests(),
+            0,
+            $secondActualClient->getRequests(),
             'The real client has actually been used.'
         );
     }
@@ -88,7 +91,8 @@ class PluginIntegrationTest extends TestCase
             self::createRequest('GET', 'http://dummy.com')
         );
         self::assertSame(
-            $actualResponseFromRecordMode, $responseToBeRecorded,
+            $responseToBeRecorded,
+            $actualResponseFromRecordMode,
             'The client responded an unexpected response.'
         );
 
@@ -97,7 +101,8 @@ class PluginIntegrationTest extends TestCase
             self::createRequest('GET', 'http://dummy.com')
         );
         self::assertSame(
-            $actualResponseFromReplayMode, $responseToBeRecorded,
+            $responseToBeRecorded,
+            $actualResponseFromReplayMode,
             'The client did not responded the recorded response.'
         );
 
@@ -106,12 +111,14 @@ class PluginIntegrationTest extends TestCase
             self::createRequest('GET', 'http://dummy.com')
         );
         self::assertNotSame(
-            $responseToBeRecorded, $newActualResponseFromRecordMode,
+            $responseToBeRecorded,
+            $newActualResponseFromRecordMode,
             'The client replayed the request.'
         );
 
         self::assertSame(
-            $anotherResponseToBeRecorded, $newActualResponseFromRecordMode,
+            $anotherResponseToBeRecorded,
+            $newActualResponseFromRecordMode,
             'The client responded an unexpected response.'
         );
 
@@ -120,7 +127,8 @@ class PluginIntegrationTest extends TestCase
             self::createRequest('GET', 'http://dummy.com')
         );
         self::assertSame(
-            $anotherResponseToBeRecorded, $newActualResponseFromReplayMode,
+            $anotherResponseToBeRecorded,
+            $newActualResponseFromReplayMode,
             'The client did not respond the recorded response.'
         );
     }
