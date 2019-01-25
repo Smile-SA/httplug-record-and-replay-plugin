@@ -1,23 +1,22 @@
-# Record And Replay Plugin
+# Record And Replay Plugin for HTTPlug
 
 [![Latest Version](https://img.shields.io/packagist/v/smile/httplug-record-and-replay-plugin.svg?style=flat-square)](https://github.com/Smile-SA/httplug-record-and-replay-plugin/releases)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Build Status](https://img.shields.io/travis/Smile-SA/httplug-record-and-replay-plugin.svg?style=flat-square)](https://travis-ci.org/Smile-SA/httplug-record-and-replay-plugin)
-[![Code Coverage](https://img.shields.io/scrutinizer/coverage/g/Smile-SA/httplug-record-and-replay-plugin.svg?style=flat-square)](https://scrutinizer-ci.com/g/Smile-SA/httplug-record-and-replay-plugin)
-[![Quality Score](https://img.shields.io/scrutinizer/g/Smile-SA/httplug-record-and-replay-plugin.svg?style=flat-square)](https://scrutinizer-ci.com/g/Smile-SA/httplug-record-and-replay-plugin)
+[![Build Status](https://img.shields.io/travis/Smile-SA/httplug-record-and-replay-plugin/master.svg?style=flat-square)](https://travis-ci.org/Smile-SA/httplug-record-and-replay-plugin)
+[![Code Coverage](https://img.shields.io/scrutinizer/coverage/g/Smile-SA/httplug-record-and-replay-plugin/master.svg?style=flat-square)](https://scrutinizer-ci.com/g/Smile-SA/httplug-record-and-replay-plugin)
+[![Quality Score](https://img.shields.io/scrutinizer/g/Smile-SA/httplug-record-and-replay-plugin/master.svg?style=flat-square)](https://scrutinizer-ci.com/g/Smile-SA/httplug-record-and-replay-plugin)
 <!--
 [![Total Downloads](https://img.shields.io/packagist/dt/smile/httplug-record-and-replay-plugin.svg?style=flat-square)](https://packagist.org/packages/smile/httplug-record-and-replay-plugin)
 -->
 
-**Record and Replay plugin for HTTPlug.**
-
+**Achieve isolated test-suites and predictable HTTP communications.**
 
 ## Install
 
 Via Composer
 
 ``` bash
-$ composer require smile/httplug-record-and-replay-plugin
+$ composer require --prefer-stable smile/httplug-record-and-replay-plugin
 ```
 
 
@@ -45,12 +44,13 @@ $client = new PluginClient($client, [$plugin]);
 
 ### HTTPlug Bundle for Symfony
 
-Declare the plugin :
+Declare the plugin (and its wanted storage) :
 ```yaml
 # config/services.yaml
 services:
     Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin:
         public: false
+        autowire: true
         arguments:
             $cachePool: '@app.simple_cache.httplug_records'
             $isRecording: true
@@ -72,17 +72,38 @@ httplug:
                 - 'Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin'
 ```
 
-Run your test-suite and you should see the `tests/httplug_records` folder being filled with cache files representing your records.
+You can now run your test-suite and you should see the `tests/httplug_records` folder being filled with cache files representing your records.
 
 Once the test-suite is green, you can remove the `$isRecording` line from your service definition and commit all the records along with the updated `*.yaml` and `composer.json`.
 
-## Testing
+Later on, when adding other behaviors based on third-party requests, you can switch back to the *record* mode (by putting back the `$isRecording: true` in the plugin service definition) and run only the new tests in order to avoid rewriting all your records.
+
+#### Autowiring troubles
+
+Depending on the dependencies versions used on your application, you may have to declare some additional services :
+
+```yaml
+# config/services.yaml
+services:
+    # PSR-17 and PSR-18 autowiring compat
+    Http\Factory\Guzzle\RequestFactory: ~
+    Psr\Http\Client\ClientInterface: '@Http\Client\HttpClient'
+    Psr\Http\Message\RequestFactoryInterface: '@Http\Factory\Guzzle\RequestFactory'
+
+    # HTTPlug record/replay plugin & records storage
+    Http\Client\Common\Plugin\Cache\Generator\CacheKeyGenerator:
+        public: false
+        class: Http\Client\Common\Plugin\Cache\Generator\SimpleGenerator
+```
+
+## Contributing and testing
 
 ``` bash
-$ composer update --prefer-stable
+$ composer update --prefer-lowest
 $ ./vendor/bin/phpunit
 ```
 
+**Please maintain the test-suite : if you add a feature, prove the new behavior; if you fix a bug, ensure the non-regression.**
 
 ## License
 
