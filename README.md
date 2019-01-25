@@ -24,13 +24,18 @@ $ composer require --prefer-stable smile/httplug-record-and-replay-plugin
 
 ### Vanilla PHP
 
+Run the following lines with the environment variable `HTTPLUG_RECORDING=1` :
+
 ```php
 /** @var Http\Client\HttpClient $client */
 $client = new Client();
 
-/** @var Psr\SimpleCache\CacheInterface $cachePool */
-/** @var Http\Client\Common\Plugin\Cache\Generator\CacheKeyGenerator $cacheKeyGenerator */
-/** @var Psr\Http\Message\StreamInterface\StreamFactory $streamFactory */
+/**
+ * You have to provide concrete instances for the following parameters :
+ * @var Psr\SimpleCache\CacheInterface $cachePool
+ * @var Http\Client\Common\Plugin\Cache\Generator\CacheKeyGenerator $cacheKeyGenerator
+ * @var Psr\Http\Message\StreamInterface\StreamFactory $streamFactory
+ */
 $plugin = new RecordAndReplayPlugin(
     $cachePool,
     $cacheKeyGenerator,
@@ -40,23 +45,30 @@ $plugin = new RecordAndReplayPlugin(
 
 /** @var Http\Client\Common\PluginClient $client */
 $client = new PluginClient($client, [$plugin]);
+
+$request = Psr17FactoryDiscovery::findRequestFactory()->createRequest('GET', 'https://api.somewhere/some_endpoint');
+$client->sendRequest($request);
 ```
+
+If you then run this lines again, but with `HTTPLUG_RECORDING=0`, the plugin will replay the recorded communications without actually call the remote service.
 
 ### HTTPlug Bundle for Symfony
 
-Declare the plugin (and its wanted storage) :
+Declare the plugin (and its wanted *PSR-16* storage) :
+
 ```yaml
 # config/services.yaml
 services:
-    Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin:
-        public: false
+    _defaults:
         autowire: true
+        public: false
+        
+    Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin:
         arguments:
             $cachePool: '@app.simple_cache.httplug_records'
             $isRecording: true
 
     app.simple_cache.httplug_records:
-        public: false
         class: Symfony\Component\Cache\Simple\FilesystemCache
         arguments:
             $directory: '%kernel.project_dir%/tests/httplug_records'
@@ -74,7 +86,7 @@ httplug:
 
 You can now run your test-suite and you should see the `tests/httplug_records` folder being filled with cache files representing your records.
 
-Once the test-suite is green, you can remove the `$isRecording` line from your service definition and commit all the records along with the updated `*.yaml` and `composer.json`.
+Once the test-suite is green, you can remove the `$isRecording` line from your service definition and commit all the records along with the updated configuration and *composer* files.
 
 Later on, when adding other behaviors based on third-party requests, you can switch back to the *record* mode (by putting back the `$isRecording: true` in the plugin service definition) and run only the new tests in order to avoid rewriting all your records.
 
@@ -85,14 +97,17 @@ Depending on the dependencies versions used on your application, you may have to
 ```yaml
 # config/services.yaml
 services:
+    _defaults:
+        autowire: true
+        public: false
+        
     # PSR-17 and PSR-18 autowiring compat
-    Http\Factory\Guzzle\RequestFactory: ~
     Psr\Http\Client\ClientInterface: '@Http\Client\HttpClient'
     Psr\Http\Message\RequestFactoryInterface: '@Http\Factory\Guzzle\RequestFactory'
+    Http\Factory\Guzzle\RequestFactory: ~
 
     # HTTPlug record/replay plugin & records storage
     Http\Client\Common\Plugin\Cache\Generator\CacheKeyGenerator:
-        public: false
         class: Http\Client\Common\Plugin\Cache\Generator\SimpleGenerator
 ```
 
