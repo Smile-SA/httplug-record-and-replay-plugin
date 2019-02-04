@@ -7,11 +7,12 @@ namespace Smile\HTTPlugRecordAndReplayPlugin;
 use Http\Client\Common\Plugin;
 use Http\Client\Common\Plugin\Cache\Generator\CacheKeyGenerator;
 use Http\Client\Common\Plugin\Exception\RewindStreamException;
-use Http\Message\StreamFactory;
 use Http\Promise\FulfilledPromise;
 use Http\Promise\Promise;
+use Http\Promise\RejectedPromise;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 
 class RecordAndReplayPlugin implements Plugin
@@ -22,7 +23,7 @@ class RecordAndReplayPlugin implements Plugin
     /** @var CacheKeyGenerator */
     private $cacheKeyGenerator;
 
-    /** @var StreamFactory */
+    /** @var StreamFactoryInterface */
     private $streamFactory;
 
     /** @var bool */
@@ -31,7 +32,7 @@ class RecordAndReplayPlugin implements Plugin
     public function __construct(
         CacheInterface $cachePool,
         CacheKeyGenerator $cacheKeyGenerator,
-        StreamFactory $streamFactory,
+        StreamFactoryInterface $streamFactory,
         bool $isRecording = false
     ) {
         $this->cachePool = $cachePool;
@@ -46,7 +47,7 @@ class RecordAndReplayPlugin implements Plugin
         if (!$this->isRecording) {
             $cachedRecord = $this->cachePool->get($recordKey);
             if ($cachedRecord === null) {
-                throw new NoRecordException($recordKey, $request);
+                return new RejectedPromise(new NoRecordException($recordKey, $request));
             }
 
             return new FulfilledPromise($this->createResponseFromRecord($cachedRecord));
