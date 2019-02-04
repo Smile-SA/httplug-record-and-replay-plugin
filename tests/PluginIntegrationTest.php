@@ -33,7 +33,7 @@ class PluginIntegrationTest extends TestCase
         self::$cachePool = new ArrayCachePool();
     }
 
-    public function testItPlugsIn()
+    public function testItCanRecordAndReplay()
     {
         $firstActualClient = new Client();
 

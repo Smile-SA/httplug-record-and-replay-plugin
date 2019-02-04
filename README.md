@@ -50,7 +50,7 @@ $request = Psr17FactoryDiscovery::findRequestFactory()->createRequest('GET', 'ht
 $client->sendRequest($request);
 ```
 
-If you then run this lines again, but with `HTTPLUG_RECORDING=0`, the plugin will replay the recorded communications without actually call the remote service.
+If you then run this lines again, but with `HTTPLUG_RECORDING=0`, the plugin will replay the recorded communications without actually calling the remote service.
 
 ### HTTPlug Bundle for Symfony
 
@@ -90,7 +90,7 @@ Once the test-suite is green, you can remove the `$isRecording` line from your s
 
 Later on, when adding other behaviors based on third-party requests, you can switch back to the *record* mode (by putting back the `$isRecording: true` in the plugin service definition) and run only the new tests in order to avoid rewriting all your records.
 
-#### Autowiring troubles
+#### Autowiring troubleshooting
 
 Depending on the dependencies versions used on your application, you may have to declare some additional services :
 
@@ -100,7 +100,7 @@ services:
     _defaults:
         autowire: true
         public: false
-        
+
     # PSR-17 and PSR-18 autowiring compat
     Psr\Http\Client\ClientInterface: '@Http\Client\HttpClient'
     Psr\Http\Message\RequestFactoryInterface: '@Http\Factory\Guzzle\RequestFactory'

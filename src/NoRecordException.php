@@ -15,6 +15,6 @@ class NoRecordException extends RequestException
      */
     public function __construct(string $recordKey, RequestInterface $request)
     {
-        parent::__construct(sprintf('No record found for "%s"', $recordKey), $request);
+        parent::__construct(sprintf('No record found for "%s".', $recordKey), $request);
     }
 }
