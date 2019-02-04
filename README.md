@@ -62,16 +62,21 @@ services:
     _defaults:
         autowire: true
         public: false
-        
+
     Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin:
         arguments:
             $cachePool: '@app.simple_cache.httplug_records'
+            $cacheKeyGenerator: '@Smile\HTTPlugRecordAndReplayPlugin\IncrementalCacheKeyGeneratorDecorator'
             $isRecording: true
 
     app.simple_cache.httplug_records:
         class: Symfony\Component\Cache\Simple\FilesystemCache
         arguments:
             $directory: '%kernel.project_dir%/tests/httplug_records'
+
+    Smile\HTTPlugRecordAndReplayPlugin\IncrementalCacheKeyGeneratorDecorator:
+        arguments:
+            $innerGenerator: '@Http\Client\Common\Plugin\Cache\Generator\CacheKeyGenerator'
 ```
 
 Plug it to your client(s) :
