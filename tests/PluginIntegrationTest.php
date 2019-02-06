@@ -16,6 +16,7 @@ use Psr\SimpleCache\CacheInterface;
 use Smile\HTTPlugRecordAndReplayPlugin\NoRecordException;
 use Smile\HTTPlugRecordAndReplayPlugin\IncrementalCacheKeyGeneratorDecorator;
 use Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin;
+use Smile\HTTPlugRecordAndReplayPlugin\RecordSuiteIdentifiersGenerator;
 
 /**
  * @covers Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin
@@ -189,7 +190,7 @@ class PluginIntegrationTest extends TestCase
           );
     }
 
-    public function testItCanRecordSeveralResponsesForTheSameRequestMadeIn()
+    public function testItCanRecordSeveralResponsesForTheSameRequestMadeInDifferentContexts()
     {
           $firstMockClient = new Client();
           $responseToBeRecorded = $this->createMockResponse();
@@ -202,8 +203,8 @@ class PluginIntegrationTest extends TestCase
           $firstClientOnRecordMode = $this->decorateClientWithThePlugin($firstMockClient, true);
           $firstClientOnReplayMode = $this->decorateClientWithThePlugin($firstMockClient);
 
-          $secondClientOnRecordMode = $this->decorateClientWithThePlugin($secondMockClient, true);
-          $secondClientOnReplayMode = $this->decorateClientWithThePlugin($secondMockClient);
+          $secondClientOnRecordMode = $this->decorateClientWithThePlugin($secondMockClient, true, 'second_client');
+          $secondClientOnReplayMode = $this->decorateClientWithThePlugin($secondMockClient, false, 'second_client');
 
           // Make the first request - should be recorded
           $actualResponseFromRecordMode = $firstClientOnRecordMode->sendRequest(
@@ -282,9 +283,9 @@ class PluginIntegrationTest extends TestCase
         return $requestFactory->createRequest($method, $uri);
     }
 
-    private static function decorateClientWithThePlugin(ClientInterface $actualClient, $shouldBeRecording = false): ClientInterface
+    private static function decorateClientWithThePlugin(ClientInterface $actualClient, bool $shouldBeRecording = false, string $rootRecordKey = ''): ClientInterface
     {
-        $cacheKeyGenerator = new IncrementalCacheKeyGeneratorDecorator(new SimpleGenerator());
+        $cacheKeyGenerator = new RecordSuiteIdentifiersGenerator(new SimpleGenerator());
         $streamFactory = Psr17FactoryDiscovery::findStreamFactory();
 
         $pluginOnRecordMode = new RecordAndReplayPlugin(
@@ -293,6 +294,10 @@ class PluginIntegrationTest extends TestCase
             $streamFactory,
             $shouldBeRecording
         );
+
+        if($rootRecordKey !== '') {
+            $cacheKeyGenerator->updateRecordKey($rootRecordKey);
+        }
 
         return new PluginClient($actualClient, [$pluginOnRecordMode]);
     }
