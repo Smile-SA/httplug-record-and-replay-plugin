@@ -14,10 +14,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\SimpleCache\CacheInterface;
 use Smile\HTTPlugRecordAndReplayPlugin\NoRecordException;
+use Smile\HTTPlugRecordAndReplayPlugin\IncrementalCacheKeyGeneratorDecorator;
 use Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin;
+use Smile\HTTPlugRecordAndReplayPlugin\RecordSuiteIdentifiersGenerator;
 
 /**
  * @covers Smile\HTTPlugRecordAndReplayPlugin\RecordAndReplayPlugin
+ * @covers Smile\HTTPlugRecordAndReplayPlugin\IncrementalCacheKeyGeneratorDecorator
  * @covers Smile\HTTPlugRecordAndReplayPlugin\NoRecordException
  */
 class PluginIntegrationTest extends TestCase
@@ -84,7 +87,9 @@ class PluginIntegrationTest extends TestCase
         $mockClient->addResponse($anotherResponseToBeRecorded);
 
         $clientOnRecordMode = $this->decorateClientWithThePlugin($mockClient, true);
+        $anotherClientOnRecordMode = $this->decorateClientWithThePlugin($mockClient, true);
         $clientOnReplayMode = $this->decorateClientWithThePlugin($mockClient);
+        $anotherClientOnReplayMode = $this->decorateClientWithThePlugin($mockClient);
 
         // Make the first request - should be recorded
         $actualResponseFromRecordMode = $clientOnRecordMode->sendRequest(
@@ -107,7 +112,7 @@ class PluginIntegrationTest extends TestCase
         );
 
         // Make an second but identical request - should overwrite the previous record
-        $newActualResponseFromRecordMode = $clientOnRecordMode->sendRequest(
+        $newActualResponseFromRecordMode = $anotherClientOnRecordMode->sendRequest(
             self::createRequest('GET', 'http://dummy.com')
         );
         self::assertNotSame(
@@ -123,7 +128,7 @@ class PluginIntegrationTest extends TestCase
         );
 
         // Replay the second request
-        $newActualResponseFromReplayMode = $clientOnReplayMode->sendRequest(
+        $newActualResponseFromReplayMode = $anotherClientOnReplayMode->sendRequest(
             self::createRequest('GET', 'http://dummy.com')
         );
         self::assertSame(
@@ -131,6 +136,115 @@ class PluginIntegrationTest extends TestCase
             $newActualResponseFromReplayMode,
             'The client did not respond the recorded response.'
         );
+    }
+
+    public function testItCanRecordSeveralResponsesForTheSameRequestMadeContinuously()
+    {
+          $mockClient = new Client();
+          $responseToBeRecorded = $this->createMockResponse();
+          $mockClient->addResponse($responseToBeRecorded);
+          $anotherResponseToBeRecorded = $this->createMockResponse();
+          $mockClient->addResponse($anotherResponseToBeRecorded);
+
+          $clientOnRecordMode = $this->decorateClientWithThePlugin($mockClient, true);
+          $clientOnReplayMode = $this->decorateClientWithThePlugin($mockClient);
+
+          // Make the first request - should be recorded
+          $actualResponseFromRecordMode = $clientOnRecordMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $responseToBeRecorded,
+              $actualResponseFromRecordMode,
+              'The client responded an unexpected response.'
+          );
+
+          // Make the second identical request - shoud be recorded too
+          $secondActualResponseFromRecordMode = $clientOnRecordMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $anotherResponseToBeRecorded,
+              $secondActualResponseFromRecordMode,
+              'The client responded an unexpected response.'
+          );
+
+          // Replay the first request
+          $actualResponseFromReplayMode = $clientOnReplayMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $responseToBeRecorded,
+              $actualResponseFromReplayMode,
+              'The client did not responded the recorded response.'
+          );
+
+          // Replay the second request
+          $secondActualResponseFromReplayMode = $clientOnReplayMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $anotherResponseToBeRecorded,
+              $secondActualResponseFromReplayMode,
+              'The client did not respond the recorded response.'
+          );
+    }
+
+    public function testItCanRecordSeveralResponsesForTheSameRequestMadeInDifferentContexts()
+    {
+          $firstMockClient = new Client();
+          $responseToBeRecorded = $this->createMockResponse();
+          $firstMockClient->addResponse($responseToBeRecorded);
+
+          $secondMockClient = new Client();
+          $anotherResponseToBeRecorded = $this->createMockResponse();
+          $secondMockClient->addResponse($anotherResponseToBeRecorded);
+
+          $firstClientOnRecordMode = $this->decorateClientWithThePlugin($firstMockClient, true);
+          $firstClientOnReplayMode = $this->decorateClientWithThePlugin($firstMockClient);
+
+          $secondClientOnRecordMode = $this->decorateClientWithThePlugin($secondMockClient, true, 'second_client');
+          $secondClientOnReplayMode = $this->decorateClientWithThePlugin($secondMockClient, false, 'second_client');
+
+          // Make the first request - should be recorded
+          $actualResponseFromRecordMode = $firstClientOnRecordMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $responseToBeRecorded,
+              $actualResponseFromRecordMode,
+              'The client responded an unexpected response.'
+          );
+
+          // Make the second identical request - shoud be recorded too
+          $secondActualResponseFromRecordMode = $secondClientOnRecordMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $anotherResponseToBeRecorded,
+              $secondActualResponseFromRecordMode,
+              'The client responded an unexpected response.'
+          );
+
+          // Replay the first request
+          $actualResponseFromReplayMode = $firstClientOnReplayMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $responseToBeRecorded,
+              $actualResponseFromReplayMode,
+              'The client did not responded the recorded response.'
+          );
+
+          // Replay the second request
+          $secondActualResponseFromReplayMode = $secondClientOnReplayMode->sendRequest(
+              self::createRequest('GET', 'http://dummy.com')
+          );
+          self::assertSame(
+              $anotherResponseToBeRecorded,
+              $secondActualResponseFromReplayMode,
+              'The client did not respond the recorded response.'
+          );
     }
 
     public function testItRejectsTheRequestWhenTheRecordDoesNotExist()
@@ -169,9 +283,9 @@ class PluginIntegrationTest extends TestCase
         return $requestFactory->createRequest($method, $uri);
     }
 
-    private static function decorateClientWithThePlugin(ClientInterface $actualClient, $shouldBeRecording = false): ClientInterface
+    private static function decorateClientWithThePlugin(ClientInterface $actualClient, bool $shouldBeRecording = false, string $rootRecordKey = ''): ClientInterface
     {
-        $cacheKeyGenerator = new SimpleGenerator();
+        $cacheKeyGenerator = new RecordSuiteIdentifiersGenerator(new SimpleGenerator());
         $streamFactory = Psr17FactoryDiscovery::findStreamFactory();
 
         $pluginOnRecordMode = new RecordAndReplayPlugin(
@@ -180,6 +294,10 @@ class PluginIntegrationTest extends TestCase
             $streamFactory,
             $shouldBeRecording
         );
+
+        if($rootRecordKey !== '') {
+            $cacheKeyGenerator->updateRecordKey($rootRecordKey);
+        }
 
         return new PluginClient($actualClient, [$pluginOnRecordMode]);
     }

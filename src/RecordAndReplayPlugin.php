@@ -18,10 +18,10 @@ use Psr\SimpleCache\CacheInterface;
 class RecordAndReplayPlugin implements Plugin
 {
     /** @var CacheInterface */
-    private $cachePool;
+    private $recordStorage;
 
     /** @var CacheKeyGenerator */
-    private $cacheKeyGenerator;
+    private $recordKeyGenerator;
 
     /** @var StreamFactoryInterface */
     private $streamFactory;
@@ -30,22 +30,22 @@ class RecordAndReplayPlugin implements Plugin
     private $isRecording;
 
     public function __construct(
-        CacheInterface $cachePool,
-        CacheKeyGenerator $cacheKeyGenerator,
+        CacheInterface $recordStorage,
+        CacheKeyGenerator $recordKeyGenerator,
         StreamFactoryInterface $streamFactory,
         bool $isRecording = false
     ) {
-        $this->cachePool = $cachePool;
-        $this->cacheKeyGenerator = $cacheKeyGenerator;
+        $this->recordStorage = $recordStorage;
+        $this->recordKeyGenerator = $recordKeyGenerator;
         $this->streamFactory = $streamFactory;
         $this->isRecording = $isRecording;
     }
 
     public function handleRequest(RequestInterface $request, callable $next, callable $first): Promise
     {
-        $recordKey = hash('sha1', $this->cacheKeyGenerator->generate($request));
+        $recordKey = hash('sha1', $this->recordKeyGenerator->generate($request));
         if (!$this->isRecording) {
-            $cachedRecord = $this->cachePool->get($recordKey);
+            $cachedRecord = $this->recordStorage->get($recordKey);
             if ($cachedRecord === null) {
                 return new RejectedPromise(new NoRecordException($recordKey, $request));
             }
@@ -66,7 +66,7 @@ class RecordAndReplayPlugin implements Plugin
                 'response' => $response,
                 'body' => $body,
             ];
-            $this->cachePool->set($recordKey, $record);
+            $this->recordStorage->set($recordKey, $record);
 
             return $response;
         });
